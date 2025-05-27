@@ -1,12 +1,13 @@
-
 import React from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { BigFiveChart } from '@/components/BigFiveChart';
+import { ClickableTerms } from '@/components/ClickableTerms';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Target, Users, AlertTriangle, HelpCircle } from 'lucide-react';
+import { getTermExplanation } from '@/data/termExplanations';
 
 interface AnalysisDisplayProps {
   profile: any;
@@ -35,6 +36,71 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
   }
 
   if (!profile) return null;
+
+  const handleTermClick = (term: string) => {
+    const explanation = getTermExplanation(term);
+    if (explanation) {
+      onEducationalClick({
+        title: term.charAt(0).toUpperCase() + term.slice(1),
+        content: explanation,
+        sections: []
+      });
+    }
+  };
+
+  const renderClickableText = (text: string) => {
+    const terms = Object.keys(require('@/data/termExplanations').termExplanations);
+    let result = text;
+    
+    terms.forEach(term => {
+      const regex = new RegExp(`\\b${term}\\b`, 'gi');
+      if (regex.test(result)) {
+        const explanation = getTermExplanation(term);
+        result = result.replace(regex, `<clickable-term data-term="${term}" data-explanation="${explanation}">${term}</clickable-term>`);
+      }
+    });
+    
+    return result;
+  };
+
+  const parseTextWithClickableTerms = (text: string) => {
+    const terms = Object.keys(require('@/data/termExplanations').termExplanations);
+    const parts = [];
+    let lastIndex = 0;
+    
+    terms.forEach(term => {
+      const regex = new RegExp(`\\b${term}\\b`, 'gi');
+      let match;
+      
+      while ((match = regex.exec(text)) !== null) {
+        // Add text before the term
+        if (match.index > lastIndex) {
+          parts.push(text.slice(lastIndex, match.index));
+        }
+        
+        // Add the clickable term
+        const explanation = getTermExplanation(term);
+        parts.push(
+          <ClickableTerms 
+            key={`${term}-${match.index}`}
+            explanation={explanation}
+            term={term}
+          >
+            {match[0]}
+          </ClickableTerms>
+        );
+        
+        lastIndex = match.index + match[0].length;
+      }
+    });
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    
+    return parts.length > 0 ? parts : [text];
+  };
 
   const handleEducationalClick = (section: string) => {
     const educationalContent = {
@@ -84,7 +150,12 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           <div className="mt-4 space-y-2">
             {Object.entries(profile.bigFive).map(([trait, score]) => (
               <div key={trait} className="flex justify-between items-center">
-                <span className="text-sm capitalize">{trait}</span>
+                <ClickableTerms 
+                  explanation={getTermExplanation(trait)}
+                  term={trait}
+                >
+                  <span className="text-sm capitalize">{trait}</span>
+                </ClickableTerms>
                 <Badge variant={Number(score) > 70 ? 'default' : Number(score) > 40 ? 'secondary' : 'outline'}>
                   {Math.round(Number(score))}%
                 </Badge>
@@ -103,7 +174,9 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
             {profile.modusOperandi.map((item, index) => (
               <div key={index} className="flex items-start space-x-3">
                 <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-                <span className="text-sm">{item}</span>
+                <span className="text-sm">
+                  {parseTextWithClickableTerms(item)}
+                </span>
               </div>
             ))}
           </div>
@@ -118,7 +191,9 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           <div className="space-y-3">
             {profile.motivations.map((motivation, index) => (
               <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium">{motivation}</span>
+                <span className="text-sm font-medium">
+                  {parseTextWithClickableTerms(motivation)}
+                </span>
               </div>
             ))}
           </div>
@@ -140,7 +215,11 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
               <p className="text-sm font-medium">{profile.demographics.education}</p>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 uppercase tracking-wide">Sosyal Durum</label>
+              <label className="text-xs text-gray-500 uppercase tracking-wide">
+                <ClickableTerms explanation={getTermExplanation('sosyal durum')}>
+                  Sosyal Durum
+                </ClickableTerms>
+              </label>
               <p className="text-sm font-medium">{profile.demographics.socialStatus}</p>
             </div>
           </div>
@@ -153,7 +232,15 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="h-6 w-6 text-orange-600" />
-              <span>Risk Faktörleri ve Psikolojik Belirteçler</span>
+              <span>
+                <ClickableTerms explanation={getTermExplanation('risk faktörleri')}>
+                  Risk Faktörleri
+                </ClickableTerms>
+                {' '}ve{' '}
+                <ClickableTerms explanation={getTermExplanation('psikolojik belirteçler')}>
+                  Psikolojik Belirteçler
+                </ClickableTerms>
+              </span>
             </div>
             <Button 
               variant="ghost" 
@@ -170,9 +257,15 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
               <h4 className="font-semibold mb-3 text-orange-800">Risk Faktörleri</h4>
               <div className="space-y-2">
                 {profile.riskFactors.map((factor, index) => (
-                  <Badge key={index} variant="outline" className="mr-2 mb-2">
-                    {factor}
-                  </Badge>
+                  <ClickableTerms 
+                    key={index}
+                    explanation={getTermExplanation(factor)}
+                    term={factor}
+                  >
+                    <Badge variant="outline" className="mr-2 mb-2 cursor-help">
+                      {factor}
+                    </Badge>
+                  </ClickableTerms>
                 ))}
               </div>
             </div>
@@ -180,9 +273,15 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
               <h4 className="font-semibold mb-3 text-blue-800">Psikolojik Belirteçler</h4>
               <div className="space-y-2">
                 {profile.psychologicalMarkers.map((marker, index) => (
-                  <Badge key={index} variant="secondary" className="mr-2 mb-2">
-                    {marker}
-                  </Badge>
+                  <ClickableTerms 
+                    key={index}
+                    explanation={getTermExplanation(marker)}
+                    term={marker}
+                  >
+                    <Badge variant="secondary" className="mr-2 mb-2 cursor-help">
+                      {marker}
+                    </Badge>
+                  </ClickableTerms>
                 ))}
               </div>
             </div>
