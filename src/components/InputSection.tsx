@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Upload, Link, FileText, Search } from 'lucide-react';
+import { Upload, Link, FileText, Search, Youtube } from 'lucide-react';
 import { predefinedProfiles } from '@/data/profiles';
 
 interface InputSectionProps {
@@ -22,13 +21,91 @@ export const InputSection: React.FC<InputSectionProps> = ({
   const [inputType, setInputType] = useState('predefined');
   const [textInput, setTextInput] = useState('');
   const [urlInput, setUrlInput] = useState('');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [selectedProfile, setSelectedProfile] = useState('');
+
+  const extractVideoId = (url: string) => {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const extractTranscript = async (videoId: string) => {
+    try {
+      // YouTube transcript extraction simülasyonu
+      // Gerçek uygulamada burası bir API çağrısı olacak
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simüle edilmiş transcript
+      const mockTranscript = `
+        Bu vakada, 35 yaşındaki bir erkek şüpheli hakkında konuşacağız. 
+        Şüpheli, sistematik bir şekilde hareket ediyor ve suçlarını önceden planlıyor.
+        Psikolojik profil incelendiğinde, antisosyal kişilik bozukluğu belirtileri görülmektedir.
+        Çocukluk travmaları ve aile geçmişi, şu anki davranış kalıplarını açıklayabilir.
+        Şüpheli, manipülatif davranışlar sergiliyor ve empati eksikliği gösteriyor.
+        Risk değerlendirmesi yüksek seviyede ve tekrar suç işleme olasılığı fazla.
+      `;
+      
+      return mockTranscript;
+    } catch (error) {
+      console.error('Transcript extraction error:', error);
+      throw new Error('YouTube transkripti alınamadı');
+    }
+  };
+
+  const analyzeTranscript = (transcript: string) => {
+    // Basit metin analizi ile profil oluşturma
+    const keywords = {
+      antisocial: transcript.toLowerCase().includes('antisosyal') || 
+                 transcript.toLowerCase().includes('manipülatif') ||
+                 transcript.toLowerCase().includes('empati eksikliği'),
+      planned: transcript.toLowerCase().includes('sistematik') ||
+               transcript.toLowerCase().includes('önceden plan'),
+      trauma: transcript.toLowerCase().includes('travma') ||
+              transcript.toLowerCase().includes('çocukluk'),
+      risk: transcript.toLowerCase().includes('risk') ||
+            transcript.toLowerCase().includes('tehlike')
+    };
+
+    return {
+      id: 'youtube-transcript',
+      title: 'YouTube Video Analizi',
+      description: 'Video transkripti üzerinden yapılan psikolojik vaka analizi',
+      bigFive: {
+        openness: keywords.antisocial ? 25 : 65,
+        conscientiousness: keywords.planned ? 75 : 45,
+        extraversion: 40,
+        agreeableness: keywords.antisocial ? 20 : 50,
+        neuroticism: keywords.trauma ? 80 : 45
+      },
+      modusOperandi: [
+        keywords.planned ? 'Sistematik suç planlaması' : 'Düzensiz davranış kalıpları',
+        keywords.antisocial ? 'Manipülatif yaklaşım' : 'Duygusal yaklaşım',
+        'Video içeriğinden çıkarılan davranış desenleri'
+      ],
+      motivations: [
+        keywords.trauma ? 'Çocukluk travması kaynaklı motivasyon' : 'Sosyal faktörler',
+        keywords.antisocial ? 'Kontrol ve güç arayışı' : 'Duygusal ihtiyaçlar'
+      ],
+      demographics: {
+        ageRange: '25-45',
+        education: 'Orta-Yüksek',
+        socialStatus: 'Video analizi temelli tahmin'
+      },
+      riskFactors: keywords.risk ? 
+        ['Yüksek risk seviyesi', 'Tekrar suç işleme olasılığı'] : 
+        ['Orta risk seviyesi'],
+      psychologicalMarkers: [
+        keywords.antisocial ? 'Antisosyal kişilik belirtileri' : 'Normal kişilik özellikleri',
+        keywords.trauma ? 'Travma belirtileri' : 'Stabil duygusal durum'
+      ]
+    };
+  };
 
   const handleAnalyze = async () => {
     onAnalysisStart();
     
-    // Simulate analysis delay
-    setTimeout(() => {
+    try {
       let profile;
       
       if (inputType === 'predefined') {
@@ -37,13 +114,25 @@ export const InputSection: React.FC<InputSectionProps> = ({
         profile = generateProfileFromText(textInput);
       } else if (inputType === 'url') {
         profile = generateProfileFromUrl(urlInput);
+      } else if (inputType === 'youtube') {
+        const videoId = extractVideoId(youtubeUrl);
+        if (!videoId) {
+          throw new Error('Geçersiz YouTube URL');
+        }
+        
+        const transcript = await extractTranscript(videoId);
+        profile = analyzeTranscript(transcript);
       }
       
       if (profile) {
         onProfileSelect(profile);
       }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      alert('Analiz sırasında bir hata oluştu: ' + error.message);
+    } finally {
       onAnalysisComplete();
-    }, 2000);
+    }
   };
 
   const generateProfileFromText = (text: string) => {
@@ -114,6 +203,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
     if (inputType === 'predefined') return !selectedProfile;
     if (inputType === 'text') return !textInput.trim();
     if (inputType === 'url') return !urlInput.trim();
+    if (inputType === 'youtube') return !youtubeUrl.trim();
     return true;
   };
 
@@ -126,7 +216,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Button
             variant={inputType === 'predefined' ? 'default' : 'outline'}
             onClick={() => setInputType('predefined')}
@@ -152,6 +242,15 @@ export const InputSection: React.FC<InputSectionProps> = ({
           >
             <Link className="h-8 w-8 mb-2" />
             <span className="text-sm">URL Analizi</span>
+          </Button>
+
+          <Button
+            variant={inputType === 'youtube' ? 'default' : 'outline'}
+            onClick={() => setInputType('youtube')}
+            className="flex flex-col items-center p-6 h-auto"
+          >
+            <Youtube className="h-8 w-8 mb-2" />
+            <span className="text-sm">YouTube Video</span>
           </Button>
           
           <Button
@@ -213,6 +312,23 @@ export const InputSection: React.FC<InputSectionProps> = ({
             </div>
           )}
 
+          {inputType === 'youtube' && (
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                YouTube Video URL
+              </label>
+              <Input
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                type="url"
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                Video transkripti otomatik olarak çıkarılacak ve psikolojik analiz yapılacak
+              </p>
+            </div>
+          )}
+
           {inputType === 'file' && (
             <div>
               <label className="block text-sm font-medium mb-2">
@@ -233,7 +349,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
           className="w-full"
           size="lg"
         >
-          Psikolojik Analizi Başlat
+          {inputType === 'youtube' ? 'YouTube Video Analizi Başlat' : 'Psikolojik Analizi Başlat'}
         </Button>
       </CardContent>
     </Card>

@@ -85,8 +85,8 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
             {Object.entries(profile.bigFive).map(([trait, score]) => (
               <div key={trait} className="flex justify-between items-center">
                 <span className="text-sm capitalize">{trait}</span>
-                <Badge variant={score > 70 ? 'default' : score > 40 ? 'secondary' : 'outline'}>
-                  {Math.round(score)}%
+                <Badge variant={Number(score) > 70 ? 'default' : Number(score) > 40 ? 'secondary' : 'outline'}>
+                  {Math.round(Number(score))}%
                 </Badge>
               </div>
             ))}
