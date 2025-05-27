@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ProfileCard } from '@/components/ProfileCard';
 import { BigFiveChart } from '@/components/BigFiveChart';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Brain, Target, Users, AlertTriangle, HelpCircle } from 'lucide-react';
-import { getTermExplanation } from '@/data/termExplanations';
+import { getTermExplanation, termExplanations } from '@/data/termExplanations';
 
 interface AnalysisDisplayProps {
   profile: any;
@@ -48,23 +49,8 @@ export const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({
     }
   };
 
-  const renderClickableText = (text: string) => {
-    const terms = Object.keys(require('@/data/termExplanations').termExplanations);
-    let result = text;
-    
-    terms.forEach(term => {
-      const regex = new RegExp(`\\b${term}\\b`, 'gi');
-      if (regex.test(result)) {
-        const explanation = getTermExplanation(term);
-        result = result.replace(regex, `<clickable-term data-term="${term}" data-explanation="${explanation}">${term}</clickable-term>`);
-      }
-    });
-    
-    return result;
-  };
-
   const parseTextWithClickableTerms = (text: string) => {
-    const terms = Object.keys(require('@/data/termExplanations').termExplanations);
+    const terms = Object.keys(termExplanations);
     const parts = [];
     let lastIndex = 0;
     
